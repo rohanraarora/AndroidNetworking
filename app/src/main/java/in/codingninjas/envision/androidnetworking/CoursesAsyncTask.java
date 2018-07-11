@@ -3,9 +3,7 @@ package in.codingninjas.envision.androidnetworking;
 import android.os.AsyncTask;
 import android.util.Log;
 
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
+import com.google.gson.Gson;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -54,22 +52,18 @@ public class CoursesAsyncTask extends AsyncTask<String,Void,ArrayList<String>> {
 
             Log.d("MainActivity","Result: " + result);
 
+            Gson gson = new Gson();
 
-
-            JSONObject rootObject = new JSONObject(result);
-            JSONObject data = rootObject.getJSONObject("data");
-            JSONArray courses = data.getJSONArray("courses");
-            for(int i = 0;i<courses.length();i++){
-                JSONObject courseObject = courses.getJSONObject(i);
-                String title = courseObject.getString("title");
-                titles.add(title);
+            CoursesResponse coursesResponse = gson.fromJson(result,CoursesResponse.class);
+            ArrayList<Course> courses = coursesResponse.getData().courses;
+            for(int i = 0;i<courses.size();i++){
+                Course course = courses.get(i);
+                titles.add(course.courseName);
             }
 
         } catch (MalformedURLException e) {
             e.printStackTrace();
         } catch (IOException e) {
-            e.printStackTrace();
-        } catch (JSONException e) {
             e.printStackTrace();
         }
 
