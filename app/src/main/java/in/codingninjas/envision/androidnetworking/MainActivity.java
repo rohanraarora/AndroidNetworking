@@ -2,6 +2,10 @@ package in.codingninjas.envision.androidnetworking;
 
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.widget.GridLayoutManager;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
+import android.support.v7.widget.StaggeredGridLayoutManager;
 import android.util.Log;
 import android.view.View;
 import android.widget.ArrayAdapter;
@@ -30,21 +34,27 @@ import retrofit2.converter.gson.GsonConverterFactory;
 public class MainActivity extends AppCompatActivity {
 
 
-    ListView listView;
-    ArrayAdapter<String> adapter;
+    RecyclerView recyclerView;
+    PostsAdapter adapter;
     ProgressBar progressBar;
-    ArrayList<String> titles = new ArrayList<>();
+    ArrayList<Post> mPosts = new ArrayList<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        listView = findViewById(R.id.listview);
+        recyclerView = findViewById(R.id.recyclerView);
         progressBar = findViewById(R.id.progressBar);
 
-        adapter = new ArrayAdapter<>(this,android.R.layout.simple_list_item_1,titles);
-        listView.setAdapter(adapter);
+//        adapter = new ArrayAdapter<>(this,android.R.layout.simple_list_item_1,titles);
+//        listView.setAdapter(adapter);
+
+        adapter = new PostsAdapter(this,mPosts);
+        recyclerView.setAdapter(adapter);
+
+        StaggeredGridLayoutManager layoutManager = new StaggeredGridLayoutManager(2,StaggeredGridLayoutManager.VERTICAL);
+        recyclerView.setLayoutManager(layoutManager);
 
         Movie movie = new Movie();
         movie.title = "ABC";
@@ -64,48 +74,28 @@ public class MainActivity extends AppCompatActivity {
 
     public void fetchData(View view){
         progressBar.setVisibility(View.VISIBLE);
-        listView.setVisibility(View.GONE);
-//        CoursesAsyncTask task= new CoursesAsyncTask(new CoursesDownloadListener() {
-////            @Override
-////            public void onDownload(ArrayList<String> titles) {
-////                courses.clear();
-////                courses.addAll(titles);
-////                adapter.notifyDataSetChanged();
-////                progressBar.setVisibility(View.GONE);
-////                listView.setVisibility(View.VISIBLE);
-////            }
-////        });
-////        task.execute("https://codingninjas.in/api/v2/courses");
-////        Toast.makeText(this,"abcsa",Toast.LENGTH_LONG).show();
-
+        recyclerView.setVisibility(View.GONE);
 
         Retrofit.Builder builder = new Retrofit.Builder()
-                .baseUrl("https://codingninjas.in/api/v2/")
+                .baseUrl("https://jsonplaceholder.typicode.com/")
                 .addConverterFactory(GsonConverterFactory.create());
-
         Retrofit retrofit = builder.build();
-
         CoursesService service = retrofit.create(CoursesService.class);
-
-        Call<CoursesResponse> call = service.getCourses();
-
-        call.enqueue(new Callback<CoursesResponse>() {
+        Call<ArrayList<Post>> call = service.getPosts();
+        call.enqueue(new Callback<ArrayList<Post>>() {
             @Override
-            public void onResponse(Call<CoursesResponse> call, Response<CoursesResponse> response) {
+            public void onResponse(Call<ArrayList<Post>> call, Response<ArrayList<Post>> response) {
 
-                CoursesResponse coursesResponse = response.body();
-                ArrayList<Course> courses = coursesResponse.getData().courses;
-                titles.clear();
-                for(int i = 0;i<courses.size();i++){
-                    titles.add(courses.get(i).courseName);
-                }
+                ArrayList<Post> posts = response.body();
+                mPosts.clear();
+                mPosts.addAll(posts);
+
+                mPosts = posts;
                 progressBar.setVisibility(View.GONE);
-                   listView.setVisibility(View.VISIBLE);
-
+                recyclerView.setVisibility(View.VISIBLE);
             }
-
             @Override
-            public void onFailure(Call<CoursesResponse> call, Throwable t) {
+            public void onFailure(Call<ArrayList<Post>> call, Throwable t) {
 
             }
         });
