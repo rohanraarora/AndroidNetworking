@@ -1,11 +1,17 @@
 package in.codingninjas.envision.androidnetworking;
 
+import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.widget.DefaultItemAnimator;
+import android.support.v7.widget.DividerItemDecoration;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.LinearSnapHelper;
 import android.support.v7.widget.RecyclerView;
+import android.support.v7.widget.SnapHelper;
 import android.support.v7.widget.StaggeredGridLayoutManager;
+import android.support.v7.widget.helper.ItemTouchHelper;
 import android.util.Log;
 import android.view.View;
 import android.widget.ArrayAdapter;
@@ -21,6 +27,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Scanner;
 
 import javax.net.ssl.HttpsURLConnection;
@@ -50,11 +57,49 @@ public class MainActivity extends AppCompatActivity {
 //        adapter = new ArrayAdapter<>(this,android.R.layout.simple_list_item_1,titles);
 //        listView.setAdapter(adapter);
 
-        adapter = new PostsAdapter(this,mPosts);
+        adapter = new PostsAdapter(this, mPosts, new PostsClickListener() {
+            @Override
+            public void onPostClicked(View view, int position) {
+                mPosts.remove(position);
+                adapter.notifyItemRemoved(position);
+            }
+        });
         recyclerView.setAdapter(adapter);
 
-        StaggeredGridLayoutManager layoutManager = new StaggeredGridLayoutManager(2,StaggeredGridLayoutManager.VERTICAL);
+        recyclerView.setItemAnimator(new DefaultItemAnimator());
+
+        recyclerView.addItemDecoration(new DividerItemDecoration(this,DividerItemDecoration.VERTICAL));
+
+        LinearLayoutManager layoutManager = new LinearLayoutManager(this);
         recyclerView.setLayoutManager(layoutManager);
+
+        ItemTouchHelper itemTouchHelper = new ItemTouchHelper(new ItemTouchHelper.SimpleCallback(ItemTouchHelper.UP|ItemTouchHelper.DOWN,ItemTouchHelper.LEFT|ItemTouchHelper.RIGHT) {
+
+            @Override
+            public boolean onMove(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder fromVH, @NonNull RecyclerView.ViewHolder toVH) {
+                int from = fromVH.getAdapterPosition();
+                int to = toVH.getAdapterPosition();
+
+                Post post = mPosts.get(from);
+                mPosts.remove(from);
+                mPosts.add(to,post);
+
+                adapter.notifyItemMoved(from,to);
+                return true;
+            }
+
+            @Override
+            public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int i) {
+                mPosts.remove(viewHolder.getAdapterPosition());
+                adapter.notifyItemRemoved(viewHolder.getAdapterPosition());
+
+            }
+        });
+
+        itemTouchHelper.attachToRecyclerView(recyclerView);
+
+        SnapHelper snapHelper = new LinearSnapHelper();
+        snapHelper.attachToRecyclerView(recyclerView);
 
         Movie movie = new Movie();
         movie.title = "ABC";
@@ -70,18 +115,14 @@ public class MainActivity extends AppCompatActivity {
 
 
 
+
     }
 
     public void fetchData(View view){
         progressBar.setVisibility(View.VISIBLE);
         recyclerView.setVisibility(View.GONE);
 
-        Retrofit.Builder builder = new Retrofit.Builder()
-                .baseUrl("https://jsonplaceholder.typicode.com/")
-                .addConverterFactory(GsonConverterFactory.create());
-        Retrofit retrofit = builder.build();
-        CoursesService service = retrofit.create(CoursesService.class);
-        Call<ArrayList<Post>> call = service.getPosts();
+        Call<ArrayList<Post>> call = ApiClient.getCoursesService().getPosts();
         call.enqueue(new Callback<ArrayList<Post>>() {
             @Override
             public void onResponse(Call<ArrayList<Post>> call, Response<ArrayList<Post>> response) {
@@ -90,7 +131,6 @@ public class MainActivity extends AppCompatActivity {
                 mPosts.clear();
                 mPosts.addAll(posts);
 
-                mPosts = posts;
                 progressBar.setVisibility(View.GONE);
                 recyclerView.setVisibility(View.VISIBLE);
             }

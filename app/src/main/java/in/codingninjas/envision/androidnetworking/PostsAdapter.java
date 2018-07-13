@@ -13,10 +13,12 @@ public class PostsAdapter extends RecyclerView.Adapter<PostViewHolder> {
 
     ArrayList<Post> posts;
     Context context;
+    PostsClickListener listener;
 
-    PostsAdapter(Context context,ArrayList<Post> posts){
+    PostsAdapter(Context context,ArrayList<Post> posts,PostsClickListener postsClickListener){
         this.posts = posts;
         this.context = context;
+        this.listener = postsClickListener;
     }
 
     @NonNull
@@ -28,11 +30,18 @@ public class PostsAdapter extends RecyclerView.Adapter<PostViewHolder> {
     }
 
     @Override
-    public void onBindViewHolder(@NonNull PostViewHolder postViewHolder, int i) {
+    public void onBindViewHolder(@NonNull final PostViewHolder postViewHolder, int i) {
 
         Post post = posts.get(i);
         postViewHolder.title.setText(post.title);
         postViewHolder.body.setText(post.body);
+        postViewHolder.itemView.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+
+                listener.onPostClicked(view,postViewHolder.getAdapterPosition());
+            }
+        });
 
     }
 
